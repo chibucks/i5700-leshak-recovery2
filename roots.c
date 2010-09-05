@@ -46,9 +46,9 @@ static const char g_package_file[] = "@\0g_package_file";
 
 static RootInfo g_roots[] = {
     { "BOOT:", g_mtd_device, NULL, "boot", NULL, g_raw },
-    { "SYSTEM:", "/dev/stl6", NULL, "system", "/system", "rfs" },
-    { "DATA:",  "/dev/stl5", NULL, "userdata", "/data", "rfs" },
-    { "CACHE:", "/dev/stl7", NULL, "cache", "/cache", "rfs" },
+    { "SYSTEM:", "/dev/stl6", NULL, "system", "/system", "ext2" },
+    { "DATA:",  "/dev/stl5", NULL, "userdata", "/data", "ext2" },
+    { "CACHE:", "/dev/stl7", NULL, "cache", "/cache", "ext2" },
     { "PACKAGE:", NULL, NULL, NULL, NULL, g_package_file },
     { "RECOVERY:", g_mtd_device, NULL, "recovery", "/", g_raw },
     { "SDCARD:", "/dev/block/mmcblk0p1", "/dev/block/mmcblk0", NULL, "/sdcard", "vfat" },
@@ -248,32 +248,25 @@ ensure_root_path_mounted(const char *root_path)
         return -1;
     }
 
-    if (info->filesystem != NULL && strcmp(info->filesystem, "rfs")==0) {
-    	// mkdir(info->mount_point, 0755);  // in case it doesn't already exist
-	if (mount(info->device, info->mount_point, info->filesystem,
-            MS_NODEV | MS_NOSUID, "xattr,check=no")) {
-	    if (info->device2 == NULL) {
-	        LOGE("Can't mount %s\n(%s)\n", info->device, strerror(errno));
-	        return -1;
-	    } else if (mount(info->device2, info->mount_point, info->filesystem,
-	                     MS_NOATIME | MS_NODEV | MS_NODIRATIME, "")) {
-	        LOGE("Can't mount %s (or %s)\n(%s)\n",
-	        info->device, info->device2, strerror(errno));
-	        return -1;
-	    }
+    if (info->filesystem != NULL) {
+        if(!chdir(info->mount_point)){
+       	    mkdir(info->mount_point, 0755);  // in case it doesn't already exist
         }
-    }
-    else {
-        mkdir(info->mount_point, 0755);  // in case it doesn't already exist
-        if (mount(info->device, info->mount_point, info->filesystem,
-                  MS_NOATIME | MS_NODEV | MS_NODIRATIME, "")) {
-            if (info->device2 == NULL) {
-                LOGE("Can't mount %s\n(%s)\n", info->device, strerror(errno));
-                return -1;
-            } else if (mount(info->device2, info->mount_point, info->filesystem,
-                       MS_NOATIME | MS_NODEV | MS_NODIRATIME, "")) {
-                LOGE("Can't mount %s (or %s)\n(%s)\n", info->device, info->device2, strerror(errno));
-                return -1;
+        else {
+            chdir("/");
+        }
+	    if (mount(info->device, info->mount_point, info->filesystem, MS_NODEV | MS_NOSUID | MS_NOATIME | MS_NODIRATIME, NULL)) {
+            if(mount(info->device, info->mount_point, "rfs", MS_NODEV | MS_NOSUID | MS_NOATIME | MS_NODIRATIME, NULL)) {
+	            if (info->device2 == NULL) {
+	                LOGE("Can't mount %s\n(%s)\n", info->device, strerror(errno));
+	                return -1;
+	            } else if (mount(info->device2, info->mount_point, info->filesystem, MS_NOATIME | MS_NODEV | MS_NODIRATIME | MS_NOATIME , NULL)) {
+                    if(mount(info->device2, info->mount_point, "rfs", MS_NOATIME | MS_NODEV | MS_NODIRATIME | MS_NOATIME, NULL)){
+	                    LOGE("Can't mount %s (or %s)\n(%s)\n",
+	                    info->device, info->device2, strerror(errno));
+	                    return -1;
+	                }
+                }
             }
         }
     }
@@ -354,13 +347,13 @@ format_root_device(const char *root)
         }
     }
 
-    if (info->filesystem != NULL && strcmp(info->filesystem, "rfs")==0) {
+    if (info->filesystem != NULL && strcmp(info->filesystem, "ext2")==0) {
 	LOGW("format: %s\n", info->device);
         pid_t pid = fork();
         if (pid == 0) {
-	    char *args[] = {"/xbin/stl.format", info->device, NULL};
-            execv("/xbin/stl.format", args);
-            fprintf(stderr, "E:Can't run STL format [%s]\n", strerror(errno));
+	    char *args[] = {"/xbin/mke2fs", info->device, NULL};
+            execv("/xbin/mke2fs", args);
+            fprintf(stderr, "E:Can't run mke2fs format [%s]\n", strerror(errno));
             _exit(-1);
         }
 
