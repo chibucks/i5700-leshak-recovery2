@@ -256,12 +256,12 @@ ensure_root_path_mounted(const char *root_path)
             chdir("/");
         }
 	    if (mount(info->device, info->mount_point, info->filesystem, MS_NODEV | MS_NOSUID | MS_NOATIME | MS_NODIRATIME, NULL)) {
-            if(mount(info->device, info->mount_point, "rfs", MS_NODEV | MS_NOSUID | MS_NOATIME | MS_NODIRATIME, NULL)) {
+            if(mount(info->device, info->mount_point, "rfs", MS_NODEV | MS_NOSUID, "codepage=utf8,xattr,check=no")) {
 	            if (info->device2 == NULL) {
 	                LOGE("Can't mount %s\n(%s)\n", info->device, strerror(errno));
 	                return -1;
 	            } else if (mount(info->device2, info->mount_point, info->filesystem, MS_NOATIME | MS_NODEV | MS_NODIRATIME | MS_NOATIME , NULL)) {
-                    if(mount(info->device2, info->mount_point, "rfs", MS_NOATIME | MS_NODEV | MS_NODIRATIME | MS_NOATIME, NULL)){
+                    if(mount(info->device2, info->mount_point, "rfs", MS_NODEV | MS_NOSUID, "codepage=utf8,xattr,check=no")){
 	                    LOGE("Can't mount %s (or %s)\n(%s)\n",
 	                    info->device, info->device2, strerror(errno));
 	                    return -1;
