@@ -351,7 +351,7 @@ format_root_device(const char *root)
 	LOGW("format: %s\n", info->device);
         pid_t pid = fork();
         if (pid == 0) {
-	    char *args[] = {"/xbin/mke2fs", info->device, NULL};
+	    char *args[] = {"/xbin/mke2fs", "-b 4096", info->device, NULL};
             execv("/xbin/mke2fs", args);
             fprintf(stderr, "E:Can't run mke2fs format [%s]\n", strerror(errno));
             _exit(-1);
