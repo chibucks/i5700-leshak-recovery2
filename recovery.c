@@ -819,8 +819,9 @@ choose_backup_type()
 
 	                        pid_t pid = fork();
     	                    if (pid == 0) {
-        	                    char *args[] = {"/xbin/busybox", "tar", "-x", "-f", sfpath, NULL};
-            	                execv("/xbin/busybox", args);
+                                chdir("/");
+        	                    char *args[] = {"/xbin/tar", "-x","-f", sfpath, NULL};
+            	                execv("/xbin/tar", args);
                 	            fprintf(stderr, "E:Can't backup\n(%s)\n", strerror(errno));
    	                	        _exit(-1);
                         	}
