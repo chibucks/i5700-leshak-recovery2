@@ -47,7 +47,7 @@ static const char g_package_file[] = "@\0g_package_file";
 static RootInfo g_roots[] = {
     { "BOOT:", g_mtd_device, NULL, "boot", NULL, g_raw },
     { "SYSTEM:", "/dev/stl6", NULL, "system", "/system", "ext2" },
-    { "DATA:",  "/dev/stl5", NULL, "userdata", "/data", "ext2" },
+    { "DATA:",  "/dev/stl5", NULL, "userdata", "/data", "ext4" },
     { "CACHE:", "/dev/stl7", NULL, "cache", "/cache", "ext2" },
     { "PACKAGE:", NULL, NULL, NULL, NULL, g_package_file },
     { "RECOVERY:", g_mtd_device, NULL, "recovery", "/", g_raw },
