@@ -1027,45 +1027,72 @@ static void choose_os()
     /* Reading boot list from sd card */
 
     if (ensure_root_path_mounted("SDCARD:")) { ui_print("\nError mount sdcard\n"); return; }
+    if (ensure_root_path_mounted("CACHE:")) { ui_print("\nError mount cache\n"); return; }
     FILE* f = fopen("/sdcard/.bootlst","r");
-    char list[20][20];
+    if (f == NULL) {
+        ui_print("Can't open /sdcard/.bootlst\n");
+        return;
+    }
+    char* list[20];
     list[0] = "Back to main menu";
     list[1] = "Boot from internal memory";
-    int i=1;
+    int i=2;
     while(!feof(f))
     {
-        fgets(list[i++],20,f);
+        list[i]=malloc(50 * sizeof(char));
+        fgets(list[i],50,f);
+        int j=0;
+        for(j=0;j<50;j++) {
+            if(list[i][j] == '\n' || list[i][j] == '\r') {
+                list[i][j]='\0';
+                break;
+            }
+        }
+        i++;
     }
     fclose(f);
+    ui_print("%d\n",i);
+    list[i-1]=NULL;
+//    ui_print("\nReaded succesfull");
 
     for (;;) {
         int chosen_item = get_selected_item(headers, list);
+        ui_print("\n%d",chosen_item);
         if (chosen_item >= 0)
         {
             if(chosen_item == 0) { break; } /* "Back" choosed */
-            char file_name[40];
+            char* file_name;
             if(chosen_item == 1) {          /* "Internal" choosed */
 
-                file_name="internal_init.rc","r";
+                file_name="/internal_init.rc";
             }
             else {
-                strcat(file_name,"/sdcard/");
-                strcat(file_name,list[choosen_item]);
+                file_name = malloc(60 * sizeof(char));
+                strcpy(file_name,"/sdcard/");
+                strcat(file_name,list[chosen_item]);
                 strcat(file_name,"/init.rc");
             }
 
-            /* Copying init.rc from coosed folder to /sdcard/next_step.rc */
+            /* Copying init.rc from choosed folder to /sdcard/next_step.rc */
 
-            FILE* i=fopen(file_name,"r");
-            FILE* o=fopen("/sdcard/next_step.rc","w");
-            while(!feof(i))
-            {
-                char c=fgetc(i);
-                fputc(c,o);
+            FILE* input=fopen(file_name,"r");
+            if (input == NULL) {
+                ui_print("\nCan't open %s for read",file_name);
+                break;
             }
-            flose(i);
-            fclose(o);
-            break;
+            FILE* output=fopen("/cache/next.rc","w");
+            if (output == NULL) {
+                ui_print("\nCan't open /sdcard/next.rc for write");
+                break;
+            }
+            while(!feof(input))
+            {
+                char c=fgetc(input);
+                fputc(c,output);
+            }
+            fclose(input);
+            fclose(output);
+            ui_print("\nSuccessful copy %s to /sdcard/next_step.rc",file_name);
         }
     }
 }
@@ -1090,9 +1117,10 @@ static void
 #define ITEM_WIPE_DATA     5
 #define ITEM_PARTED        6
 #define ITEM_MOUNT         7
-#define ITEM_RESTORE       8
-#define ITEM_FSCK          9
-#define ITEM_CHOOSE_OS     10
+#define ITEM_CHOOSE_OS     8
+#define ITEM_RESTORE       9
+#define ITEM_FSCK          10
+
 
     static char* items[] = { "Reboot system now [Home+Back]",
                              "Apply sdcard/update.zip",
@@ -1174,6 +1202,7 @@ static void
             case ITEM_CHOOSE_OS:
                 // TODO: write here
                 choose_os();
+                if (!ui_text_visible()) return;
                 break;
 
             case ITEM_REBOOT:
@@ -1205,7 +1234,7 @@ static void
                 ui_print("\n-- any other key to abort..");
                 int confirm_apply = ui_wait_key();
                 if (confirm_apply == KEY_DREAM_HOME) {
-                    sui_print("\nInstall from sdcard...\n");
+                    ui_print("\nInstall from sdcard...\n");
                     int status = install_package(SDCARD_PACKAGE_FILE);
                     if (status != INSTALL_SUCCESS) {
                         ui_set_background(BACKGROUND_ICON_ERROR);
@@ -1297,7 +1326,7 @@ static void
                 if (!ui_text_visible()) return;
                 break;
 
-                case ITEM_FSCK:ITEM_CHOOSE_OS
+                case ITEM_FSCK:
                             ui_print("Checking filesystems");
                     pid_t pidf = fork();
                     if (pidf == 0) {
